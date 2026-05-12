@@ -1,0 +1,163 @@
+"use client";
+
+import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
+import { doc, getDoc, collection, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { Evento } from "@/types";
+import { Header } from "@/components/layout/Header";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+
+const statusColors: Record<string, "default" | "success" | "warning" | "danger" | "info"> = {
+  borrador: "default",
+  activo: "success",
+  finalizado: "info",
+  cancelado: "danger",
+};
+
+const statusLabels: Record<string, string> = {
+  borrador: "Borrador",
+  activo: "Activo",
+  finalizado: "Finalizado",
+  cancelado: "Cancelado",
+};
+
+export default function EventoDetallePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const router = useRouter();
+  const [evento, setEvento] = useState<Evento | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ inscripciones: 0, gastos: 0 });
+
+  useEffect(() => {
+    const fetchEvento = async () => {
+      try {
+        const docRef = doc(db, "eventos", id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setEvento({ id: docSnap.id, ...docSnap.data() } as Evento);
+        }
+
+        const inscSnap = await getDocs(collection(db, "inscripciones"));
+        const inscCount = inscSnap.docs.filter((d) => d.data().eventoId === id).size;
+        setStats((prev) => ({ ...prev, inscripciones: inscCount }));
+      } catch (error) {
+        console.error("Error fetching evento:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvento();
+  }, [id]);
+
+  const formatDate = (timestamp: { toDate: () => Date } | null | undefined) => {
+    if (!timestamp) return "";
+    return timestamp.toDate().toLocaleDateString("es-CO", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!evento) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-slate-400">Evento no encontrado</p>
+        <Button onClick={() => router.push("/eventos")} className="mt-4">
+          Volver a eventos
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <Header
+        title={evento.nombre}
+        subtitle={`ID: ${evento.id}`}
+        action={{
+          label: "Ver Dashboard",
+          onClick: () => router.push(`/eventos/${id}/dashboard`),
+        }}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Card className="p-6">
+            <div className="flex items-start justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-100">Información del Evento</h2>
+              <Badge variant={statusColors[evento.estatus] || "default"}>
+                {statusLabels[evento.estatus] || evento.estatus}
+              </Badge>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-slate-400 mb-1">Descripción</p>
+                <p className="text-slate-200">{evento.descripcion || "Sin descripción"}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-slate-400 mb-1">Fecha de inicio</p>
+                  <p className="text-slate-200">{formatDate(evento.fechaInicio)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-400 mb-1">Fecha de fin</p>
+                  <p className="text-slate-200">{formatDate(evento.fechaFin)}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-slate-400 mb-1">Lugar</p>
+                <p className="text-slate-200">{evento.lugar || "No especificado"}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <h2 className="text-lg font-semibold text-slate-100 mb-4">Acciones Rápidas</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Button variant="secondary" onClick={() => router.push(`/eventos/${id}/inscripciones/nueva`)}>
+                Nueva Inscripción
+              </Button>
+              <Button variant="secondary" onClick={() => router.push(`/eventos/${id}/gastos/nuevo`)}>
+                Registrar Gasto
+              </Button>
+              <Button variant="secondary" onClick={() => router.push(`/eventos/${id}/reportes`)}>
+                Ver Reportes
+              </Button>
+              <Button variant="secondary" onClick={() => router.push(`/eventos/${id}/configuracion`)}>
+                Configuración
+              </Button>
+            </div>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card className="p-6">
+            <h2 className="text-lg font-semibold text-slate-100 mb-4">Resumen</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Inscripciones</span>
+                <span className="text-2xl font-bold text-slate-100">{stats.inscripciones}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Gastos</span>
+                <span className="text-2xl font-bold text-slate-100">{stats.gastos}</span>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
