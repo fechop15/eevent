@@ -87,6 +87,7 @@ export default function GastosEventoPage({ params }: { params: Promise<{ id: str
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Descripción</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Categoría</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Tipo</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase">Soporte</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-slate-400 uppercase">Monto</th>
               </tr>
             </thead>
@@ -106,6 +107,17 @@ export default function GastosEventoPage({ params }: { params: Promise<{ id: str
                     <Badge variant={gasto.tipoPago === "efectivo" ? "info" : "purple"}>
                       {gasto.tipoPago}
                     </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {gasto.soporteData ? (
+                      <svg className="w-5 h-5 text-emerald-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 text-slate-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-sm text-right text-slate-100 font-medium">
                     {formatCurrency(gasto.monto)}

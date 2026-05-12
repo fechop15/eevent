@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import { FileUpload } from "@/components/ui/FileUpload";
 
 const categoriasGasto = [
   { value: "alimentacion", label: "Alimentación" },
@@ -43,9 +44,13 @@ export default function NuevoGastoPage({ params }: { params: Promise<{ id: strin
     tipoPago: "efectivo",
     referencia: "",
     observaciones: "",
-    soporteUrl: "",
-    soporteNombre: "",
   });
+
+  const [soporteData, setSoporteData] = useState<{
+    base64: string;
+    name: string;
+    mimeType: string;
+  } | null>(null);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -74,8 +79,10 @@ export default function NuevoGastoPage({ params }: { params: Promise<{ id: strin
         fechaGasto: Timestamp.now(),
         referencia: form.referencia,
         observaciones: form.observaciones,
-        soporteUrl: form.soporteUrl,
-        soporteNombre: form.soporteNombre,
+        soporteData: soporteData?.base64 || "",
+        soporteMimeType: soporteData?.mimeType || "",
+        soporteNombre: soporteData?.name || "",
+        soporteUrl: "",
         creadoPor: user?.uid,
         fechaCreacion: Timestamp.now(),
         fechaActualizacion: Timestamp.now(),
@@ -141,6 +148,12 @@ export default function NuevoGastoPage({ params }: { params: Promise<{ id: strin
           value={form.referencia}
           onChange={handleChange}
           placeholder="Ej: #transferencia 123456"
+        />
+
+        <FileUpload
+          label="Soporte (opcional)"
+          accept=".pdf,.jpg,.jpeg,.png"
+          onChange={(data) => setSoporteData(data ? { base64: data.base64, name: data.name, mimeType: data.mimeType } : null)}
         />
 
         <Textarea

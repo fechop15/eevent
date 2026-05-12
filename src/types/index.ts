@@ -97,6 +97,8 @@ export interface Gasto {
   fechaGasto: Timestamp;
   soporteUrl: string;
   soporteNombre: string;
+  soporteData: string;
+  soporteMimeType: string;
   observaciones: string;
   creadoPor: string;
   fechaCreacion: Timestamp;
