@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { addDoc, collection, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { addDoc, collection } from "@/lib/firebase";
+import { Timestamp } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
@@ -65,12 +65,12 @@ export default function NuevaPersonaPage() {
     setLoading(true);
 
     try {
-      await addDoc(collection(db, "personas"), {
+      await addDoc(collection("personas"), {
         nombre: form.nombre,
         apellido: form.apellido,
         tipoDocumento: form.tipoDocumento,
         numeroDocumento: form.numeroDocumento,
-        fechaNacimiento: form.fechaNacimiento ? Timestamp.fromDate(new Date(form.fechaNacimiento)) : null,
+        fechaNacimiento: form.fechaNacimiento ? Timestamp.now() : null,
         sexo: form.sexo,
         telefono: form.telefono,
         email: form.email,

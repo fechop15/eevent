@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { collection, getDocs } from "@/lib/firebase";
 import { Persona } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
@@ -19,8 +18,7 @@ export default function PersonasPage() {
   useEffect(() => {
     const fetchPersonas = async () => {
       try {
-        const q = query(collection(db, "personas"), orderBy("nombre"));
-        const snapshot = await getDocs(q);
+        const snapshot = await getDocs(collection("personas"));
         const data = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),

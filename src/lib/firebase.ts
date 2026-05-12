@@ -1,20 +1,111 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+declare global {
+  interface Window {
+    firebase: {
+      initializeApp: (config: Record<string, string>) => { app: unknown };
+      auth: () => FirebaseAuth;
+      firestore: () => FirebaseFirestore;
+    };
+  }
+}
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+interface FirebaseAuth {
+  signInWithEmailAndPassword: (email: string, password: string) => Promise<FirebaseAuthResult>;
+  createUserWithEmailAndPassword: (email: string, password: string) => Promise<FirebaseAuthResult>;
+  signOut: () => Promise<void>;
+  updateProfile: (user: FirebaseUser, data: { displayName: string }) => Promise<void>;
+  currentUser: FirebaseUser | null;
+  onAuthStateChanged: (callback: (user: FirebaseUser | null) => void) => () => void;
+}
+
+interface FirebaseAuthResult {
+  user: FirebaseUser;
+}
+
+interface FirebaseUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+}
+
+interface FirebaseFirestore {
+  collection: (path: string) => FirebaseCollection;
+}
+
+interface FirebaseCollection {
+  add: (data: Record<string, unknown>) => Promise<{ id: string }>;
+  doc: (id: string) => FirebaseDoc;
+  get: () => Promise<FirebaseQuerySnapshot>;
+}
+
+interface FirebaseDoc {
+  get: () => Promise<FirebaseDocSnapshot>;
+  set: (data: Record<string, unknown>) => Promise<void>;
+  update: (data: Record<string, unknown>) => Promise<void>;
+}
+
+interface FirebaseDocSnapshot {
+  exists: () => boolean;
+  data: () => Record<string, unknown>;
+}
+
+interface FirebaseQuerySnapshot {
+  docs: FirebaseQueryDocSnapshot[];
+  size: number;
+}
+
+interface FirebaseQueryDocSnapshot {
+  id: string;
+  data: () => Record<string, unknown>;
+}
+
+function auth() {
+  return window.firebase.auth();
+}
+
+function db() {
+  return window.firebase.firestore();
+}
+
+function collection(path: string) {
+  return window.firebase.firestore().collection(path);
+}
+
+function doc(path: string) {
+  const segments = path.split("/");
+  if (segments.length % 2 === 0) {
+    return window.firebase.firestore().doc(path);
+  }
+  return window.firebase.firestore().doc(path);
+}
+
+async function getDoc(ref: FirebaseDoc) {
+  return ref.get();
+}
+
+async function getDocs(col: FirebaseCollection) {
+  return col.get();
+}
+
+async function addDoc(col: FirebaseCollection, data: Record<string, unknown>) {
+  return col.add(data);
+}
+
+async function updateDoc(ref: FirebaseDoc, data: Record<string, unknown>) {
+  return ref.update(data);
+}
+
+async function setDoc(ref: FirebaseDoc, data: Record<string, unknown>) {
+  return ref.set(data);
+}
+
+export {
+  auth,
+  db,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  addDoc,
+  updateDoc,
+  setDoc,
 };
-
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
-
-export { app, auth, db, storage };

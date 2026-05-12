@@ -2,8 +2,8 @@
 
 import { useState, use } from "react";
 import { useRouter } from "next/navigation";
-import { addDoc, collection, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { addDoc, collection } from "@/lib/firebase";
+import { Timestamp } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
@@ -65,7 +65,7 @@ export default function NuevoGastoPage({ params }: { params: Promise<{ id: strin
     setLoading(true);
 
     try {
-      await addDoc(collection(db, "gastos"), {
+      await addDoc(collection("gastos"), {
         eventoId,
         descripcion: form.descripcion,
         categoria: form.categoria,

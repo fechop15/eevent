@@ -2,8 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { collection, getDocs } from "@/lib/firebase";
 import { Inscripcion } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
@@ -27,13 +26,11 @@ export default function InscripcionesEventoPage({ params }: { params: Promise<{ 
   useEffect(() => {
     const fetchInscripciones = async () => {
       try {
-        const q = query(
-          collection(db, "inscripciones"),
-          where("eventoId", "==", eventoId),
-          orderBy("fechaCreacion", "desc")
-        );
-        const snapshot = await getDocs(q);
-        setInscripciones(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Inscripcion[]);
+        const snapshot = await getDocs(collection("inscripciones"));
+        const filtered = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter((i) => i.eventoId === eventoId) as Inscripcion[];
+        setInscripciones(filtered);
       } catch (error) {
         console.error("Error fetching inscripciones:", error);
       } finally {

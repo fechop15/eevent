@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { collection, getDocs } from "@/lib/firebase";
 import { Evento } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
@@ -33,8 +32,7 @@ export default function EventosPage() {
   useEffect(() => {
     const fetchEventos = async () => {
       try {
-        const q = query(collection(db, "eventos"), orderBy("fechaCreacion", "desc"));
-        const snapshot = await getDocs(q);
+        const snapshot = await getDocs(collection("eventos"));
         const data = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),

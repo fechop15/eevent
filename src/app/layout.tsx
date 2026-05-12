@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/hooks/useAuth";
+import { FirebaseProvider } from "@/components/providers/FirebaseProvider";
 
 export const metadata: Metadata = {
   title: "EEvent - Gestión de Eventos",
@@ -15,7 +16,9 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <FirebaseProvider>{children}</FirebaseProvider>
+        </AuthProvider>
       </body>
     </html>
   );

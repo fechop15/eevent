@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { collection, addDoc, getDocs, query, where, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { Persona, TipoInscripcion } from "@/types";
+import { collection, addDoc, getDocs } from "@/lib/firebase";
+import { Persona, TipoInscripcion, Timestamp } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
@@ -22,11 +21,14 @@ export default function NuevaInscripcionPage({ params }: { params: Promise<{ id:
   useEffect(() => {
     const fetchData = async () => {
       const [perSnap, tipoSnap] = await Promise.all([
-        getDocs(query(collection(db, "personas"), where("creadoPor", "==", ""))),
-        getDocs(query(collection(db, "tiposInscripcion"), where("eventoId", "==", eventoId))),
+        getDocs(collection("personas")),
+        getDocs(collection("tiposInscripcion")),
       ]);
       setPersonas(perSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as Persona[]);
-      setTipos(tipoSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as TipoInscripcion[]);
+      const filteredTipos = tipoSnap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((t) => t.eventoId === eventoId) as TipoInscripcion[];
+      setTipos(filteredTipos);
     };
     fetchData();
   }, [eventoId]);
@@ -46,7 +48,7 @@ export default function NuevaInscripcionPage({ params }: { params: Promise<{ id:
       const tipo = tipos.find((t) => t.id === selectedTipo);
       const valorTotal = tipo?.precio || 0;
 
-      await addDoc(collection(db, "inscripciones"), {
+      await addDoc(collection("inscripciones"), {
         eventoId,
         personaId: selectedPersona,
         tipoInscripcionId: selectedTipo,

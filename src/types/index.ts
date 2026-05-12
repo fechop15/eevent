@@ -1,4 +1,9 @@
-import { Timestamp } from 'firebase/firestore';
+class Timestamp {
+  static now() { return { toDate: () => new Date() }; }
+  toDate() { return new Date(); }
+  seconds: number = 0;
+  nanoseconds: number = 0;
+}
 
 export type Rol = 'admin' | 'organizador' | 'contador';
 export type EstadoUsuario = 'activo' | 'inactivo';

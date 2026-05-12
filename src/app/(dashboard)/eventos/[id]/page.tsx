@@ -2,8 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { doc, getDoc, collection, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { doc, getDoc, collection, getDocs } from "@/lib/firebase";
 import { Evento } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
@@ -34,15 +33,18 @@ export default function EventoDetallePage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     const fetchEvento = async () => {
       try {
-        const docRef = doc(db, "eventos", id);
-        const docSnap = await getDoc(docRef);
+        const docSnap = await getDoc(doc("eventos/" + id));
         if (docSnap.exists()) {
           setEvento({ id: docSnap.id, ...docSnap.data() } as Evento);
         }
 
-        const inscSnap = await getDocs(collection(db, "inscripciones"));
-        const inscCount = inscSnap.docs.filter((d) => d.data().eventoId === id).size;
-        setStats((prev) => ({ ...prev, inscripciones: inscCount }));
+        const [inscSnap, gastosSnap] = await Promise.all([
+          getDocs(collection("inscripciones")),
+          getDocs(collection("gastos")),
+        ]);
+        const inscCount = inscSnap.docs.filter((d) => d.data().eventoId === id).length;
+        const gastosCount = gastosSnap.docs.filter((d) => d.data().eventoId === id).length;
+        setStats({ inscripciones: inscCount, gastos: gastosCount });
       } catch (error) {
         console.error("Error fetching evento:", error);
       } finally {

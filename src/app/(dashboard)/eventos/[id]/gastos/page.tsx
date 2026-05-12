@@ -2,8 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { collection, getDocs } from "@/lib/firebase";
 import { Gasto } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
@@ -20,13 +19,11 @@ export default function GastosEventoPage({ params }: { params: Promise<{ id: str
   useEffect(() => {
     const fetchGastos = async () => {
       try {
-        const q = query(
-          collection(db, "gastos"),
-          where("eventoId", "==", eventoId),
-          orderBy("fechaGasto", "desc")
-        );
-        const snapshot = await getDocs(q);
-        setGastos(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Gasto[]);
+        const snapshot = await getDocs(collection("gastos"));
+        const filtered = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter((g) => g.eventoId === eventoId) as Gasto[];
+        setGastos(filtered);
       } catch (error) {
         console.error("Error fetching gastos:", error);
       } finally {

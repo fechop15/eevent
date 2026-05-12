@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { doc, getDoc, collection, getDocs } from "@/lib/firebase";
 import { Evento } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
@@ -25,22 +24,23 @@ export default function ReportesEventoPage({ params }: { params: Promise<{ id: s
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [eventoDoc, inscSnap, gastosSnap] = await Promise.all([
-          getDoc(doc(db, "eventos", eventoId)),
-          getDocs(query(collection(db, "inscripciones"), where("eventoId", "==", eventoId))),
-          getDocs(query(collection(db, "gastos"), where("eventoId", "==", eventoId))),
+        const [eventoDoc, allInscrSnap, allGastosSnap] = await Promise.all([
+          getDoc(doc("eventos/" + eventoId)),
+          getDocs(collection("inscripciones")),
+          getDocs(collection("gastos")),
         ]);
 
         if (eventoDoc.exists()) {
           setEvento({ id: eventoDoc.id, ...eventoDoc.data() } as Evento);
         }
 
+        const filteredInscr = allInscrSnap.docs.filter((d) => d.data().eventoId === eventoId);
         let ingresosTotales = 0;
         let abonos = 0;
         let pendiente = 0;
         const porEstado = { pendiente: 0, abono: 0, pagado: 0, cancelado: 0 };
 
-        inscSnap.docs.forEach((doc) => {
+        filteredInscr.forEach((doc) => {
           const data = doc.data();
           ingresosTotales += data.valorAbono || 0;
           abonos += data.valorAbono || 0;
@@ -48,9 +48,10 @@ export default function ReportesEventoPage({ params }: { params: Promise<{ id: s
           porEstado[data.estadoPago] = (porEstado[data.estadoPago] || 0) + 1;
         });
 
+        const filteredGastos = allGastosSnap.docs.filter((d) => d.data().eventoId === eventoId);
         let totalGastos = 0;
         const gastosPorCategoria: Record<string, number> = {};
-        gastosSnap.docs.forEach((doc) => {
+        filteredGastos.forEach((doc) => {
           const data = doc.data();
           totalGastos += data.monto || 0;
           const cat = data.categoria || "otro";
@@ -58,7 +59,7 @@ export default function ReportesEventoPage({ params }: { params: Promise<{ id: s
         });
 
         setStats({
-          totalInscripciones: inscSnap.size,
+          totalInscripciones: filteredInscr.length,
           ingresosTotales,
           abonos,
           pendiente,

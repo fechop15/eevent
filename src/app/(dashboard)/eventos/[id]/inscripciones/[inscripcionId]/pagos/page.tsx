@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-import { doc, getDoc, collection, addDoc, getDocs, updateDoc, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { Inscripcion, Pago } from "@/types";
+import { doc, getDoc, collection, addDoc, getDocs, updateDoc } from "@/lib/firebase";
+import { Inscripcion, Pago, Timestamp } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -30,11 +29,11 @@ export default function PagosInscripcionPage({ params }: { params: Promise<{ id:
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const inscDoc = await getDoc(doc(db, "inscripciones", inscripcionId));
+        const inscDoc = await getDoc(doc("inscripciones/" + inscripcionId));
         if (inscDoc.exists()) {
           setInscripcion({ id: inscDoc.id, ...inscDoc.data() } as Inscripcion);
         }
-        const pagosSnap = await getDocs(collection(db, "inscripciones", inscripcionId, "pagos"));
+        const pagosSnap = await getDocs(collection("inscripciones/" + inscripcionId + "/pagos"));
         setPagos(pagosSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Pago[]);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -59,13 +58,13 @@ export default function PagosInscripcionPage({ params }: { params: Promise<{ id:
         observaciones: form.observaciones,
       };
 
-      await addDoc(collection(db, "inscripciones", inscripcionId, "pagos"), pagoData);
+      await addDoc(collection("inscripciones/" + inscripcionId + "/pagos"), pagoData);
 
       const nuevoAbono = (inscripcion?.valorAbono || 0) + montoPago;
       const nuevoRestante = (inscripcion?.valorRestante || 0) - montoPago;
       const nuevoEstado = nuevoRestante <= 0 ? "pagado" : "abono";
 
-      await updateDoc(doc(db, "inscripciones", inscripcionId), {
+      await updateDoc(doc("inscripciones/" + inscripcionId), {
         valorAbono: nuevoAbono,
         valorRestante: Math.max(0, nuevoRestante),
         estadoPago: nuevoEstado,
@@ -75,11 +74,11 @@ export default function PagosInscripcionPage({ params }: { params: Promise<{ id:
       setShowModal(false);
       setForm({ tipoPago: "efectivo", monto: "", referencia: "", observaciones: "" });
 
-      const inscDoc = await getDoc(doc(db, "inscripciones", inscripcionId));
+      const inscDoc = await getDoc(doc("inscripciones/" + inscripcionId));
       if (inscDoc.exists()) {
         setInscripcion({ id: inscDoc.id, ...inscDoc.data() } as Inscripcion);
       }
-      const pagosSnap = await getDocs(collection(db, "inscripciones", inscripcionId, "pagos"));
+      const pagosSnap = await getDocs(collection("inscripciones/" + inscripcionId + "/pagos"));
       setPagos(pagosSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Pago[]);
     } catch (error) {
       console.error("Error registering pago:", error);

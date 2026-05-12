@@ -2,8 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { doc, getDoc, collection, getDocs } from "@/lib/firebase";
 import { Evento } from "@/types";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -40,32 +39,32 @@ export default function DashboardEventoPage({ params }: { params: Promise<{ id: 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const eventoDoc = await getDoc(doc(db, "eventos", id));
+        const eventoDoc = await getDoc(doc("eventos/" + id));
         if (eventoDoc.exists()) {
           setEvento({ id: eventoDoc.id, ...eventoDoc.data() } as Evento);
         }
 
-        const inscSnap = await getDocs(
-          query(collection(db, "inscripciones"), where("eventoId", "==", id))
-        );
-        const gastosSnap = await getDocs(
-          query(collection(db, "gastos"), where("eventoId", "==", id))
-        );
+        const [allInscrSnap, allGastosSnap] = await Promise.all([
+          getDocs(collection("inscripciones")),
+          getDocs(collection("gastos")),
+        ]);
+
+        const filteredInscr = allInscrSnap.docs.filter((d) => d.data().eventoId === id);
+        const filteredGastos = allGastosSnap.docs.filter((d) => d.data().eventoId === id);
 
         let ingresosTotales = 0;
-
-        inscSnap.docs.forEach((doc) => {
+        filteredInscr.forEach((doc) => {
           const data = doc.data();
           ingresosTotales += data.valorAbono || 0;
         });
 
         let totalGastos = 0;
-        gastosSnap.docs.forEach((doc) => {
+        filteredGastos.forEach((doc) => {
           totalGastos += doc.data().monto || 0;
         });
 
         setStats({
-          totalInscripciones: inscSnap.size,
+          totalInscripciones: filteredInscr.length,
           ingresosTotales,
           abonos: 0,
           pendiente: 0,

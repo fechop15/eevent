@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { addDoc, collection, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { addDoc, collection } from "@/lib/firebase";
+import { Timestamp } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
@@ -45,20 +45,20 @@ export default function NuevoEventoPage() {
     setLoading(true);
 
     try {
-      const docRef = await addDoc(collection(db, "eventos"), {
+      const result = await addDoc(collection("eventos"), {
         nombre: form.nombre,
         descripcion: form.descripcion,
         lugar: form.lugar,
         observaciones: form.observaciones,
-        fechaInicio: Timestamp.fromDate(new Date(form.fechaInicio)),
-        fechaFin: Timestamp.fromDate(new Date(form.fechaFin)),
+        fechaInicio: Timestamp.now(),
+        fechaFin: Timestamp.now(),
         estatus: form.estatus,
         creadoPor: user?.uid,
         fechaCreacion: Timestamp.now(),
         fechaActualizacion: Timestamp.now(),
       });
 
-      router.push(`/eventos/${docRef.id}`);
+      router.push(`/eventos/${result.id}`);
     } catch (err) {
       console.error("Error creando evento:", err);
       setError("Error al crear el evento. Intenta de nuevo.");

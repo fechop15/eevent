@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { collection, addDoc, getDocs } from "@/lib/firebase";
 import { TipoInscripcion } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
@@ -23,9 +22,11 @@ export default function ConfiguracionEventoPage({ params }: { params: Promise<{ 
   useEffect(() => {
     const fetchTipos = async () => {
       try {
-        const q = query(collection(db, "tiposInscripcion"), where("eventoId", "==", eventoId));
-        const snapshot = await getDocs(q);
-        setTipos(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as TipoInscripcion[]);
+        const snapshot = await getDocs(collection("tiposInscripcion"));
+        const filtered = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+.filter((t) => t.eventoId === eventoId) as TipoInscripcion[];
+        setTipos(filtered);
       } catch (error) {
         console.error("Error fetching tipos:", error);
       } finally {
@@ -39,7 +40,7 @@ export default function ConfiguracionEventoPage({ params }: { params: Promise<{ 
     e.preventDefault();
     setSubmitting(true);
     try {
-      await addDoc(collection(db, "tiposInscripcion"), {
+      await addDoc(collection("tiposInscripcion"), {
         nombre: form.nombre,
         precio: parseFloat(form.precio),
         descripcion: form.descripcion,
@@ -48,9 +49,11 @@ export default function ConfiguracionEventoPage({ params }: { params: Promise<{ 
       });
       setShowModal(false);
       setForm({ nombre: "", precio: "", descripcion: "" });
-      const q = query(collection(db, "tiposInscripcion"), where("eventoId", "==", eventoId));
-      const snapshot = await getDocs(q);
-      setTipos(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as TipoInscripcion[]);
+      const snapshot = await getDocs(collection("tiposInscripcion"));
+      const filtered = snapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter((t) => t.eventoId === eventoId) as TipoInscripcion[];
+      setTipos(filtered);
     } catch (error) {
       console.error("Error saving tipo:", error);
     } finally {

@@ -2,8 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { doc, getDoc, collection, getDocs } from "@/lib/firebase";
 import { Persona, Inscripcion } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
@@ -26,14 +25,17 @@ export default function PersonaDetallePage({ params }: { params: Promise<{ id: s
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const docRef = doc(db, "personas", id);
+        const docRef = doc("personas/" + id);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setPersona({ id: docSnap.id, ...docSnap.data() } as Persona);
         }
 
-        const inscSnap = await getDocs(query(collection(db, "inscripciones"), where("personaId", "==", id)));
-        setInscripciones(inscSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Inscripcion[]);
+        const allInscrSnap = await getDocs(collection("inscripciones"));
+        const filteredInscr = allInscrSnap.docs
+          .filter((d) => d.data().personaId === id)
+          .map((doc) => ({ id: doc.id, ...doc.data() })) as Inscripcion[];
+        setInscripciones(filteredInscr);
       } catch (error) {
         console.error("Error fetching persona:", error);
       } finally {
