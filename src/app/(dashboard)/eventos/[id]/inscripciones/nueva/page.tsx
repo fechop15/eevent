@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { collection, addDoc, getDocs } from "@/lib/firebase";
-import { Persona, TipoInscripcion, Timestamp } from "@/types";
+import { collection, addDoc, getDocs, doc, getDoc } from "@/lib/firebase";
+import { Persona, TipoInscripcion, Espacio, Evento, Timestamp, capitalizeName } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
-import { Select } from "@/components/ui/Select";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 
 export default function NuevaInscripcionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: eventoId } = use(params);
@@ -17,18 +17,36 @@ export default function NuevaInscripcionPage({ params }: { params: Promise<{ id:
   const [tipos, setTipos] = useState<TipoInscripcion[]>([]);
   const [selectedPersona, setSelectedPersona] = useState("");
   const [selectedTipo, setSelectedTipo] = useState("");
+  const [evento, setEvento] = useState<Evento | null>(null);
+  const [espacios, setEspacios] = useState<Espacio[]>([]);
+  const [selectedEspacio, setSelectedEspacio] = useState("");
+  const [inscripcionesActivas, setInscripcionesActivas] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
-      const [perSnap, tipoSnap] = await Promise.all([
+      const [perSnap, tipoSnap, evtDoc, inscSnap, espSnap] = await Promise.all([
         getDocs(collection("personas")),
         getDocs(collection("tiposInscripcion")),
+        getDoc(doc("eventos/" + eventoId)),
+        getDocs(collection("inscripciones")),
+        getDocs(collection("espacios")),
       ]);
       setPersonas(perSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as Persona[]);
-      const filteredTipos = tipoSnap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
-        .filter((t) => t.eventoId === eventoId) as TipoInscripcion[];
+      const filteredTipos = (tipoSnap.docs
+        .map((d) => ({ id: d.id, ...d.data() })) as TipoInscripcion[]
+      ).filter((t) => t.eventoId === eventoId);
       setTipos(filteredTipos);
+      if (evtDoc.exists) {
+        setEvento({ id: evtDoc.id, ...evtDoc.data() } as Evento);
+      }
+      const count = inscSnap.docs
+        .map((d) => ({ id: d.id, ...d.data() } as { eventoId: string; estadoPago: string }))
+        .filter((i) => i.eventoId === eventoId && i.estadoPago !== "cancelado").length;
+      setInscripcionesActivas(count);
+      const filteredEspacios = espSnap.docs
+        .map((d) => ({ id: d.id, ...d.data() } as Espacio))
+        .filter((e) => e.eventoId === eventoId);
+      setEspacios(filteredEspacios);
     };
     fetchData();
   }, [eventoId]);
@@ -36,6 +54,11 @@ export default function NuevaInscripcionPage({ params }: { params: Promise<{ id:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (limiteAlcanzado) {
+      setError("Se ha alcanzado el límite de inscripciones");
+      return;
+    }
 
     if (!selectedPersona || !selectedTipo) {
       setError("Selecciona una persona y un tipo de inscripción");
@@ -48,10 +71,13 @@ export default function NuevaInscripcionPage({ params }: { params: Promise<{ id:
       const tipo = tipos.find((t) => t.id === selectedTipo);
       const valorTotal = tipo?.precio || 0;
 
+      const espacioIdValue = selectedEspacio.trim() || null;
+
       await addDoc(collection("inscripciones"), {
         eventoId,
         personaId: selectedPersona,
         tipoInscripcionId: selectedTipo,
+        espacioId: espacioIdValue,
         estadoPago: "pendiente",
         valorTotal,
         valorAbono: 0,
@@ -70,31 +96,50 @@ export default function NuevaInscripcionPage({ params }: { params: Promise<{ id:
   };
 
   const selectedTipoData = tipos.find((t) => t.id === selectedTipo);
+  const limiteAlcanzado = evento?.limiteInscripciones && inscripcionesActivas >= evento.limiteInscripciones;
 
   return (
     <div className="max-w-2xl">
-      <Header title="Nueva Inscripción" subtitle="Registrar una nueva inscripción" />
+      <Header
+        title="Nueva Inscripción"
+        subtitle={
+          evento?.limiteInscripciones
+            ? `${inscripcionesActivas} de ${evento.limiteInscripciones} inscripciones`
+            : `Total de inscripciones: ${inscripcionesActivas}`
+        }
+        back={{ label: "Volver a Inscripciones", onClick: () => router.push(`/eventos/${eventoId}/inscripciones`) }}
+      />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <Select
+      {limiteAlcanzado && (
+        <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+          <p className="text-sm text-amber-400">
+            <strong>Límite de inscripciones alcanzado.</strong> Este evento tiene un límite de {evento?.limiteInscripciones} inscripciones. No se pueden registrar más hasta que se actualice el límite o se cancele alguna inscripción.
+          </p>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6" style={{ opacity: limiteAlcanzado ? 0.5 : 1, pointerEvents: limiteAlcanzado ? "none" : "auto" }}>
+        <SearchableSelect
           id="persona"
           label="Persona"
           value={selectedPersona}
-          onChange={(e) => setSelectedPersona(e.target.value)}
+          onChange={setSelectedPersona}
+          placeholder="Buscar por nombre o cédula..."
           options={[
             { value: "", label: "Seleccionar persona..." },
             ...personas.map((p) => ({
               value: p.id,
-              label: `${p.nombre} ${p.apellido} - ${p.tipoDocumento} ${p.numeroDocumento}`,
+              label: `${capitalizeName(p.nombre)} ${capitalizeName(p.apellido)} - ${p.numeroDocumento}`,
             })),
           ]}
         />
 
-        <Select
+        <SearchableSelect
           id="tipo"
           label="Tipo de inscripción"
           value={selectedTipo}
-          onChange={(e) => setSelectedTipo(e.target.value)}
+          onChange={setSelectedTipo}
+          placeholder="Buscar tipo de inscripción..."
           options={[
             { value: "", label: "Seleccionar tipo..." },
             ...tipos.map((t) => ({
@@ -103,6 +148,23 @@ export default function NuevaInscripcionPage({ params }: { params: Promise<{ id:
             })),
           ]}
         />
+
+        {espacios.length > 0 && (
+          <SearchableSelect
+            id="espacio"
+            label="Espacio (opcional)"
+            value={selectedEspacio}
+            onChange={setSelectedEspacio}
+            placeholder="Asignar a un espacio..."
+            options={[
+              { value: "", label: "Sin espacio" },
+              ...espacios.map((e) => ({
+                value: e.id,
+                label: `${e.nombre} (${e.capacidad - (e._count || 0)} disponibles)`,
+              })),
+            ]}
+          />
+        )}
 
         {selectedTipoData && (
           <div className="p-4 bg-slate-800/50 rounded-lg border border-white/10">

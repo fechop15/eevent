@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc } from "@/lib/firebase";
-import { Gasto } from "@/types";
+import { Gasto, formatTimestamp } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -19,7 +19,7 @@ export default function GastoDetallePage({ params }: { params: Promise<{ id: str
     const fetchGasto = async () => {
       try {
         const snap = await getDoc(doc(`gastos/${gastoId}`));
-        if (snap.exists()) {
+        if (snap.exists) {
           setGasto({ id: snap.id, ...snap.data() } as Gasto);
         }
       } catch (err) {
@@ -40,14 +40,7 @@ export default function GastoDetallePage({ params }: { params: Promise<{ id: str
     }).format(amount);
   };
 
-  const formatDate = (ts: { toDate: () => Date } | null | undefined) => {
-    if (!ts) return "";
-    return ts.toDate().toLocaleDateString("es-CO", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  };
+  
 
   if (loading) {
     return (
@@ -93,7 +86,7 @@ export default function GastoDetallePage({ params }: { params: Promise<{ id: str
               </div>
               <div>
                 <p className="text-sm text-slate-400 mb-1">Fecha</p>
-                <p className="text-slate-200">{formatDate(gasto.fechaGasto)}</p>
+                <p className="text-slate-200">{formatTimestamp(gasto.fechaGasto)}</p>
               </div>
               {gasto.referencia && (
                 <div className="col-span-2">

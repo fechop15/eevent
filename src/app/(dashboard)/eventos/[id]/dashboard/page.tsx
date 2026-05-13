@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, collection, getDocs } from "@/lib/firebase";
-import { Evento } from "@/types";
+import { Evento, formatTimestamp } from "@/types";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -40,7 +40,7 @@ export default function DashboardEventoPage({ params }: { params: Promise<{ id: 
     const fetchData = async () => {
       try {
         const eventoDoc = await getDoc(doc("eventos/" + id));
-        if (eventoDoc.exists()) {
+        if (eventoDoc.exists) {
           setEvento({ id: eventoDoc.id, ...eventoDoc.data() } as Evento);
         }
 
@@ -49,18 +49,19 @@ export default function DashboardEventoPage({ params }: { params: Promise<{ id: 
           getDocs(collection("gastos")),
         ]);
 
-        const filteredInscr = allInscrSnap.docs.filter((d) => d.data().eventoId === id);
-        const filteredGastos = allGastosSnap.docs.filter((d) => d.data().eventoId === id);
+        const filteredInscr = allInscrSnap.docs.filter((d) => (d.data().eventoId as string) === id);
+        const filteredGastos = allGastosSnap.docs.filter((d) => (d.data().eventoId as string) === id);
 
         let ingresosTotales = 0;
         filteredInscr.forEach((doc) => {
-          const data = doc.data();
+          const data = doc.data() as { valorAbono: number };
           ingresosTotales += data.valorAbono || 0;
         });
 
         let totalGastos = 0;
         filteredGastos.forEach((doc) => {
-          totalGastos += doc.data().monto || 0;
+          const data = doc.data() as { monto: number };
+          totalGastos += data.monto || 0;
         });
 
         setStats({
@@ -89,14 +90,7 @@ export default function DashboardEventoPage({ params }: { params: Promise<{ id: 
     }).format(amount);
   };
 
-  const formatDate = (timestamp: { toDate: () => Date } | null | undefined) => {
-    if (!timestamp) return "";
-    return timestamp.toDate().toLocaleDateString("es-CO", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
+  
 
   if (loading) {
     return (
@@ -125,7 +119,7 @@ export default function DashboardEventoPage({ params }: { params: Promise<{ id: 
             </Badge>
           </div>
           <p className="text-sm text-slate-400">
-            {formatDate(evento.fechaInicio)} - {formatDate(evento.fechaFin)}
+            {formatTimestamp(evento.fechaInicio)} - {formatTimestamp(evento.fechaFin)}
           </p>
         </div>
         <Button variant="secondary" onClick={() => router.push(`/eventos/${id}`)}>

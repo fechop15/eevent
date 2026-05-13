@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { collection, getDocs } from "@/lib/firebase";
-import { Evento } from "@/types";
+import { Evento, formatTimestamp } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -48,14 +48,7 @@ export default function EventosPage() {
     fetchEventos();
   }, []);
 
-  const formatDate = (timestamp: { toDate: () => Date } | null | undefined) => {
-    if (!timestamp) return "";
-    return timestamp.toDate().toLocaleDateString("es-CO", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
+  
 
   if (loading) {
     return (
@@ -118,7 +111,7 @@ export default function EventosPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                   <span>
-                    {formatDate(evento.fechaInicio)} - {formatDate(evento.fechaFin)}
+                    {formatTimestamp(evento.fechaInicio)} - {formatTimestamp(evento.fechaFin)}
                   </span>
                 </div>
               </div>

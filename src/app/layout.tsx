@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/hooks/useAuth";
-import { FirebaseProvider } from "@/components/providers/FirebaseProvider";
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   title: "EEvent - Gestión de Eventos",
@@ -15,10 +20,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body>
-        <AuthProvider>
-          <FirebaseProvider>{children}</FirebaseProvider>
-        </AuthProvider>
+      <body className={inter.className}>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { collection, getDocs } from "@/lib/firebase";
-import { Gasto } from "@/types";
+import { Gasto, formatTimestamp } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -21,8 +21,8 @@ export default function GastosEventoPage({ params }: { params: Promise<{ id: str
       try {
         const snapshot = await getDocs(collection("gastos"));
         const filtered = snapshot.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() }))
-          .filter((g) => g.eventoId === eventoId) as Gasto[];
+          .map((doc) => ({ id: doc.id, ...doc.data() } as Gasto))
+          .filter((g) => g.eventoId === eventoId);
         setGastos(filtered);
       } catch (error) {
         console.error("Error fetching gastos:", error);
@@ -42,10 +42,7 @@ export default function GastosEventoPage({ params }: { params: Promise<{ id: str
     }).format(amount);
   };
 
-  const formatDate = (timestamp: { toDate: () => Date } | null | undefined) => {
-    if (!timestamp) return "";
-    return timestamp.toDate().toLocaleDateString("es-CO");
-  };
+  
 
   if (loading) {
     return (
@@ -98,7 +95,7 @@ export default function GastosEventoPage({ params }: { params: Promise<{ id: str
                   className="border-b border-white/5 hover:bg-slate-800/50 cursor-pointer transition-colors"
                   onClick={() => router.push(`/eventos/${eventoId}/gastos/${gasto.id}`)}
                 >
-                  <td className="px-4 py-3 text-sm text-slate-400">{formatDate(gasto.fechaGasto)}</td>
+                  <td className="px-4 py-3 text-sm text-slate-400">{formatTimestamp(gasto.fechaGasto)}</td>
                   <td className="px-4 py-3 text-sm text-slate-100">{gasto.descripcion}</td>
                   <td className="px-4 py-3 text-sm">
                     <Badge variant="default">{gasto.categoria}</Badge>

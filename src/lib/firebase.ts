@@ -29,6 +29,7 @@ interface FirebaseUser {
 
 interface FirebaseFirestore {
   collection: (path: string) => FirebaseCollection;
+  doc: (...segments: string[]) => FirebaseDoc;
 }
 
 interface FirebaseCollection {
@@ -44,7 +45,8 @@ interface FirebaseDoc {
 }
 
 interface FirebaseDocSnapshot {
-  exists: () => boolean;
+  id: string;
+  exists: boolean;
   data: () => Record<string, unknown>;
 }
 
@@ -70,12 +72,8 @@ function collection(path: string) {
   return window.firebase.firestore().collection(path);
 }
 
-function doc(path: string) {
-  const segments = path.split("/");
-  if (segments.length % 2 === 0) {
-    return window.firebase.firestore().doc(path);
-  }
-  return window.firebase.firestore().doc(path);
+function doc(...segments: string[]): FirebaseDoc {
+  return window.firebase.firestore().doc(segments.join("/"));
 }
 
 async function getDoc(ref: FirebaseDoc) {
@@ -94,6 +92,10 @@ async function updateDoc(ref: FirebaseDoc, data: Record<string, unknown>) {
   return ref.update(data);
 }
 
+async function deleteDoc(ref: FirebaseDoc) {
+  return ref.update({ _deleted: true, deletedAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 } });
+}
+
 async function setDoc(ref: FirebaseDoc, data: Record<string, unknown>) {
   return ref.set(data);
 }
@@ -107,5 +109,6 @@ export {
   getDocs,
   addDoc,
   updateDoc,
+  deleteDoc,
   setDoc,
 };

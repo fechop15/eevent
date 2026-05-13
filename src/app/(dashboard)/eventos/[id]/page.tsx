@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, collection, getDocs } from "@/lib/firebase";
-import { Evento } from "@/types";
+import { Evento, formatTimestamp } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -34,7 +34,7 @@ export default function EventoDetallePage({ params }: { params: Promise<{ id: st
     const fetchEvento = async () => {
       try {
         const docSnap = await getDoc(doc("eventos/" + id));
-        if (docSnap.exists()) {
+        if (docSnap.exists) {
           setEvento({ id: docSnap.id, ...docSnap.data() } as Evento);
         }
 
@@ -54,15 +54,6 @@ export default function EventoDetallePage({ params }: { params: Promise<{ id: st
 
     fetchEvento();
   }, [id]);
-
-  const formatDate = (timestamp: { toDate: () => Date } | null | undefined) => {
-    if (!timestamp) return "";
-    return timestamp.toDate().toLocaleDateString("es-CO", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  };
 
   if (loading) {
     return (
@@ -111,11 +102,11 @@ export default function EventoDetallePage({ params }: { params: Promise<{ id: st
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-slate-400 mb-1">Fecha de inicio</p>
-                  <p className="text-slate-200">{formatDate(evento.fechaInicio)}</p>
+                  <p className="text-slate-200">{formatTimestamp(evento.fechaInicio)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-400 mb-1">Fecha de fin</p>
-                  <p className="text-slate-200">{formatDate(evento.fechaFin)}</p>
+                  <p className="text-slate-200">{formatTimestamp(evento.fechaFin)}</p>
                 </div>
               </div>
               <div>
@@ -127,18 +118,30 @@ export default function EventoDetallePage({ params }: { params: Promise<{ id: st
 
           <Card className="p-6">
             <h2 className="text-lg font-semibold text-slate-100 mb-4">Acciones Rápidas</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <Button variant="secondary" onClick={() => router.push(`/eventos/${id}/inscripciones/nueva`)}>
                 Nueva Inscripción
               </Button>
+              <Button variant="secondary" onClick={() => router.push(`/eventos/${id}/inscripciones`)}>
+                Ver Inscripciones
+              </Button>
               <Button variant="secondary" onClick={() => router.push(`/eventos/${id}/gastos/nuevo`)}>
                 Registrar Gasto
+              </Button>
+              <Button variant="secondary" onClick={() => router.push(`/eventos/${id}/gastos`)}>
+                Ver Gastos
               </Button>
               <Button variant="secondary" onClick={() => router.push(`/eventos/${id}/reportes`)}>
                 Ver Reportes
               </Button>
               <Button variant="secondary" onClick={() => router.push(`/eventos/${id}/configuracion`)}>
                 Configuración
+              </Button>
+              <Button variant="secondary" onClick={() => router.push(`/eventos/${id}/tareas`)}>
+                Tareas
+              </Button>
+              <Button variant="secondary" onClick={() => router.push(`/eventos/${id}/espacios`)}>
+                Espacios
               </Button>
             </div>
           </Card>
@@ -148,14 +151,30 @@ export default function EventoDetallePage({ params }: { params: Promise<{ id: st
           <Card className="p-6">
             <h2 className="text-lg font-semibold text-slate-100 mb-4">Resumen</h2>
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <button
+                onClick={() => router.push(`/eventos/${id}/inscripciones`)}
+                className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors"
+              >
                 <span className="text-slate-400">Inscripciones</span>
-                <span className="text-2xl font-bold text-slate-100">{stats.inscripciones}</span>
-              </div>
-              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold text-slate-100">{stats.inscripciones}</span>
+                  <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
+              <button
+                onClick={() => router.push(`/eventos/${id}/gastos`)}
+                className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors"
+              >
                 <span className="text-slate-400">Gastos</span>
-                <span className="text-2xl font-bold text-slate-100">{stats.gastos}</span>
-              </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold text-slate-100">{stats.gastos}</span>
+                  <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
             </div>
           </Card>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC6WecBcLCjDM1gUnWLksDpfSgNb2-EcqE",
@@ -9,11 +10,11 @@ const firebaseConfig = {
   storageBucket: "eevent-59ae4.firebasestorage.app",
   messagingSenderId: "101879572487",
   appId: "1:101879572487:web:82dfd11f1501c7b3e662a2",
-  measurementId: "G-XE4H2KN33D"
+  measurementId: "G-XE4H2KN33D",
 };
 
-export function FirebaseProvider({ children }: { children: React.ReactNode }) {
-  const [_irebaseReady, setReady] = useState(false);
+export function FirebaseLoader({ children }: { children: React.ReactNode }) {
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const scripts = [
@@ -44,6 +45,14 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
       });
     };
   }, []);
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return <>{children}</>;
 }

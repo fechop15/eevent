@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, collection, getDocs } from "@/lib/firebase";
-import { Persona, Inscripcion } from "@/types";
+import { Persona, Inscripcion, formatTimestamp, capitalizeName } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -27,7 +27,7 @@ export default function PersonaDetallePage({ params }: { params: Promise<{ id: s
       try {
         const docRef = doc("personas/" + id);
         const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
+        if (docSnap.exists) {
           setPersona({ id: docSnap.id, ...docSnap.data() } as Persona);
         }
 
@@ -46,10 +46,7 @@ export default function PersonaDetallePage({ params }: { params: Promise<{ id: s
     fetchData();
   }, [id]);
 
-  const formatDate = (timestamp: { toDate: () => Date } | null | undefined) => {
-    if (!timestamp) return "No disponible";
-    return timestamp.toDate().toLocaleDateString("es-CO");
-  };
+  
 
   if (loading) {
     return (
@@ -73,7 +70,7 @@ export default function PersonaDetallePage({ params }: { params: Promise<{ id: s
   return (
     <div>
       <Header
-        title={`${persona.nombre} ${persona.apellido}`}
+        title={`${capitalizeName(persona.nombre)} ${capitalizeName(persona.apellido)}`}
         subtitle={`${persona.tipoDocumento} ${persona.numeroDocumento}`}
         action={{
           label: "Editar",
@@ -88,7 +85,7 @@ export default function PersonaDetallePage({ params }: { params: Promise<{ id: s
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-slate-400 mb-1">Fecha de nacimiento</p>
-                <p className="text-slate-200">{formatDate(persona.fechaNacimiento)}</p>
+                <p className="text-slate-200">{formatTimestamp(persona.fechaNacimiento)}</p>
               </div>
               <div>
                 <p className="text-sm text-slate-400 mb-1">Sexo</p>

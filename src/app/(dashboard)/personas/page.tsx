@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { collection, getDocs } from "@/lib/firebase";
 import { Persona } from "@/types";
+import { capitalizeName } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -101,7 +102,7 @@ export default function PersonasPage() {
                 >
                   <td className="px-4 py-3">
                     <p className="text-sm font-medium text-slate-100">
-                      {persona.nombre} {persona.apellido}
+                      {capitalizeName(persona.nombre)} {capitalizeName(persona.apellido)}
                     </p>
                   </td>
                   <td className="px-4 py-3">

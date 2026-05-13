@@ -5,56 +5,68 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isOwnDoc(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function getRol() {
+      return getUserData().rol;
+    }
+
     function isAdmin() {
-      return isAuthenticated() && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
+      return isAuthenticated() && getRol() == 'admin';
     }
 
     function isOrganizador() {
-      return isAuthenticated() && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'organizador';
+      return isAuthenticated() && getRol() == 'organizador';
     }
 
     function canWrite() {
       return isAdmin() || isOrganizador();
     }
 
-    // Colección de usuarios del sistema
     match /usuarios/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow write: if isAdmin() || isOwnDoc(userId);
     }
 
-    // Colección de eventos
     match /eventos/{eventId} {
       allow read: if isAuthenticated();
-      allow create: if canWrite();
-      allow update, delete: if canWrite();
+      allow write: if canWrite();
     }
 
-    // Colección de personas
     match /personas/{personId} {
       allow read, write: if isAuthenticated();
     }
 
-    // Tipos de inscripción (por evento)
     match /tiposInscripcion/{tipoId} {
       allow read: if isAuthenticated();
       allow write: if canWrite();
     }
 
-    // Inscripciones
     match /inscripciones/{inscId} {
       allow read: if isAuthenticated();
-      allow create: if canWrite();
-      allow update, delete: if canWrite();
-
-      // Subcolección de pagos
+      allow write: if canWrite();
       match /pagos/{pagoId} {
         allow read, write: if canWrite();
       }
     }
 
-    // Gastos
     match /gastos/{gastoId} {
+      allow read: if isAuthenticated();
+      allow write: if canWrite();
+    }
+
+    match /tareas/{tareaId} {
+      allow read: if isAuthenticated();
+      allow write: if canWrite();
+    }
+
+    match /espacios/{espacioId} {
       allow read: if isAuthenticated();
       allow write: if canWrite();
     }

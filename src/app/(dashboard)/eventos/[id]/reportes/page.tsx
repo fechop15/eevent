@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { doc, getDoc, collection, getDocs } from "@/lib/firebase";
-import { Evento } from "@/types";
+import { Evento, Inscripcion, Gasto } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
 
@@ -30,7 +30,7 @@ export default function ReportesEventoPage({ params }: { params: Promise<{ id: s
           getDocs(collection("gastos")),
         ]);
 
-        if (eventoDoc.exists()) {
+        if (eventoDoc.exists) {
           setEvento({ id: eventoDoc.id, ...eventoDoc.data() } as Evento);
         }
 
@@ -41,18 +41,18 @@ export default function ReportesEventoPage({ params }: { params: Promise<{ id: s
         const porEstado = { pendiente: 0, abono: 0, pagado: 0, cancelado: 0 };
 
         filteredInscr.forEach((doc) => {
-          const data = doc.data();
+          const data = doc.data() as unknown as Inscripcion;
           ingresosTotales += data.valorAbono || 0;
           abonos += data.valorAbono || 0;
           pendiente += data.valorRestante || 0;
           porEstado[data.estadoPago] = (porEstado[data.estadoPago] || 0) + 1;
         });
 
-        const filteredGastos = allGastosSnap.docs.filter((d) => d.data().eventoId === eventoId);
+        const filteredGastos = allGastosSnap.docs.filter((d) => (d.data() as unknown as Gasto).eventoId === eventoId);
         let totalGastos = 0;
         const gastosPorCategoria: Record<string, number> = {};
         filteredGastos.forEach((doc) => {
-          const data = doc.data();
+          const data = doc.data() as unknown as Gasto;
           totalGastos += data.monto || 0;
           const cat = data.categoria || "otro";
           gastosPorCategoria[cat] = (gastosPorCategoria[cat] || 0) + data.monto;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
+import { capitalizeName } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -20,7 +21,7 @@ export default function ConfiguracionPage() {
           <div className="space-y-3">
             <div>
               <p className="text-sm text-slate-400">Nombre</p>
-              <p className="text-slate-200">{user.nombre} {user.apellido}</p>
+              <p className="text-slate-200">{capitalizeName(user.nombre)} {capitalizeName(user.apellido)}</p>
             </div>
             <div>
               <p className="text-sm text-slate-400">Cédula</p>

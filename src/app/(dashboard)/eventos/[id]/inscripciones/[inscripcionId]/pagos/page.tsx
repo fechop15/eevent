@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
 import { doc, getDoc, collection, addDoc, getDocs, updateDoc } from "@/lib/firebase";
-import { Inscripcion, Pago, Timestamp } from "@/types";
+import { Inscripcion, Pago, Evento, Persona, Timestamp, formatTimestamp } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -18,8 +19,11 @@ const tipoPagoOptions = [
 ];
 
 export default function PagosInscripcionPage({ params }: { params: Promise<{ id: string; inscripcionId: string }> }) {
-  const { inscripcionId } = use(params);
+  const { id: eventoId, inscripcionId } = use(params);
+  const router = useRouter();
   const [inscripcion, setInscripcion] = useState<Inscripcion | null>(null);
+  const [evento, setEvento] = useState<Evento | null>(null);
+  const [persona, setPersona] = useState<Persona | null>(null);
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -30,11 +34,18 @@ export default function PagosInscripcionPage({ params }: { params: Promise<{ id:
     const fetchData = async () => {
       try {
         const inscDoc = await getDoc(doc("inscripciones/" + inscripcionId));
-        if (inscDoc.exists()) {
-          setInscripcion({ id: inscDoc.id, ...inscDoc.data() } as Inscripcion);
+        if (inscDoc.exists) {
+          const inscData = { id: inscDoc.id, ...inscDoc.data() } as Inscripcion;
+          setInscripcion(inscData);
+          const [evtDoc, perDoc] = await Promise.all([
+            getDoc(doc("eventos/" + inscData.eventoId)),
+            getDoc(doc("personas/" + inscData.personaId)),
+          ]);
+          if (evtDoc.exists) setEvento({ id: evtDoc.id, ...evtDoc.data() } as Evento);
+          if (perDoc.exists) setPersona({ id: perDoc.id, ...perDoc.data() } as Persona);
         }
         const pagosSnap = await getDocs(collection("inscripciones/" + inscripcionId + "/pagos"));
-        setPagos(pagosSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Pago[]);
+        setPagos(pagosSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as Pago[]);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -75,7 +86,7 @@ export default function PagosInscripcionPage({ params }: { params: Promise<{ id:
       setForm({ tipoPago: "efectivo", monto: "", referencia: "", observaciones: "" });
 
       const inscDoc = await getDoc(doc("inscripciones/" + inscripcionId));
-      if (inscDoc.exists()) {
+      if (inscDoc.exists) {
         setInscripcion({ id: inscDoc.id, ...inscDoc.data() } as Inscripcion);
       }
       const pagosSnap = await getDocs(collection("inscripciones/" + inscripcionId + "/pagos"));
@@ -95,16 +106,7 @@ export default function PagosInscripcionPage({ params }: { params: Promise<{ id:
     }).format(amount);
   };
 
-  const formatDate = (timestamp: { toDate: () => Date } | null | undefined) => {
-    if (!timestamp) return "";
-    return timestamp.toDate().toLocaleDateString("es-CO", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  
 
   if (loading) {
     return (
@@ -133,11 +135,16 @@ export default function PagosInscripcionPage({ params }: { params: Promise<{ id:
     <div>
       <Header
         title="Pagos"
-        subtitle={`Inscripción: ${inscripcionId.slice(0, 8)}...`}
+        subtitle={evento ? `${evento.nombre} — ${persona?.nombre} ${persona?.apellido}` : "Cargando..."}
+        back={{
+          label: "Volver a Inscripciones",
+          onClick: () => router.push(`/eventos/${eventoId}/inscripciones`),
+        }}
         action={{
           label: "+ Registrar Pago",
           onClick: () => setShowModal(true),
           variant: inscripcion.estadoPago === "pagado" ? "secondary" : "primary",
+          disabled: inscripcion.estadoPago === "pagado",
         }}
       />
 
@@ -157,7 +164,7 @@ export default function PagosInscripcionPage({ params }: { params: Promise<{ id:
         <Card className="p-5">
           <p className="text-sm text-slate-400 mb-2">Estado</p>
           <Badge variant={estadoColors[inscripcion.estadoPago] || "default"} className="text-lg">
-            {inscripcion.estadoPago}
+            {inscripcion.estadoPago.charAt(0).toUpperCase() + inscripcion.estadoPago.slice(1)}
           </Badge>
         </Card>
       </div>
@@ -173,7 +180,7 @@ export default function PagosInscripcionPage({ params }: { params: Promise<{ id:
                 <div>
                   <p className="font-medium text-slate-200">{formatCurrency(pago.monto)}</p>
                   <p className="text-sm text-slate-400">
-                    {formatDate(pago.fechaPago)} • {pago.tipoPago}
+                    {formatTimestamp(pago.fechaPago)} • {pago.tipoPago}
                     {pago.referencia && ` • ${pago.referencia}`}
                   </p>
                   {pago.observaciones && <p className="text-xs text-slate-500 mt-1">{pago.observaciones}</p>}

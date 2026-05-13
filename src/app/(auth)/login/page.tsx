@@ -1,19 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { user, login } = useAuth();
   const [cedula, setCedula] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user !== null) {
+      router.push("/eventos");
+    }
+  }, [user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,12 +28,9 @@ export default function LoginPage() {
 
     try {
       await login(cedula, password);
-      router.push("/eventos");
     } catch (err: unknown) {
       const errorCode = (err as { code?: string }).code;
-      if (errorCode === "auth/user-not-found" || errorCode === "auth/wrong-password") {
-        setError("Cédula o contraseña incorrectos");
-      } else if (errorCode === "auth/invalid-credential") {
+      if (errorCode === "auth/user-not-found" || errorCode === "auth/wrong-password" || errorCode === "auth/invalid-credential") {
         setError("Cédula o contraseña incorrectos");
       } else {
         setError("Error al iniciar sesión. Intenta de nuevo.");
@@ -41,7 +44,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 mb-4">
             <span className="text-white font-bold text-2xl">E</span>
           </div>
           <h1 className="text-3xl font-bold text-slate-100">EEvent</h1>
@@ -86,9 +89,7 @@ export default function LoginPage() {
           </form>
         </Card>
 
-        <p className="text-center text-xs text-slate-600 mt-6">
-          © 2026 EEvent
-        </p>
+        <p className="text-center text-xs text-slate-600 mt-6">© 2026 EEvent</p>
       </div>
     </div>
   );

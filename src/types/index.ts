@@ -1,8 +1,42 @@
-class Timestamp {
-  static now() { return { toDate: () => new Date() }; }
-  toDate() { return new Date(); }
+export class Timestamp {
+  static now() {
+    const d = new Date();
+    const seconds = Math.floor(d.getTime() / 1000);
+    return { seconds, nanoseconds: 0 };
+  }
+  toDate() {
+    return new Date(this.seconds * 1000 + this.nanoseconds / 1000000);
+  }
   seconds: number = 0;
   nanoseconds: number = 0;
+}
+
+export function formatTimestamp(timestamp: { toDate?: () => Date; seconds?: number; nanoseconds?: number } | null | undefined): string {
+  if (!timestamp) return "";
+  if (typeof timestamp.toDate === "function") {
+    return timestamp.toDate().toLocaleDateString("es-CO", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  }
+  if (typeof timestamp.seconds === "number") {
+    return new Date(timestamp.seconds * 1000).toLocaleDateString("es-CO", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  }
+  return "";
+}
+
+export function capitalizeName(str: string): string {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 export type Rol = 'admin' | 'organizador' | 'contador';
@@ -62,7 +96,7 @@ export interface TipoInscripcion {
   precio: number;
   descripcion: string;
   eventoId: string;
-  fechaCreacion: Timestamp;
+  fechaCreacion: Date | Record<string, unknown>;
 }
 
 export interface Inscripcion {
@@ -70,6 +104,7 @@ export interface Inscripcion {
   eventoId: string;
   personaId: string;
   tipoInscripcionId: string;
+  espacioId: string | null;
   estadoPago: EstadoPago;
   valorTotal: number;
   valorAbono: number;
@@ -87,6 +122,28 @@ export interface Pago {
   observaciones: string;
 }
 
+export interface Tarea {
+  id: string;
+  eventoId: string;
+  titulo: string;
+  descripcion: string;
+  completada: boolean;
+  fechaLimite: Timestamp | null;
+  fechaCreacion: Timestamp;
+  fechaActualizacion: Timestamp;
+}
+
+export interface Espacio {
+  id: string;
+  eventoId: string;
+  nombre: string;
+  descripcion: string;
+  capacidad: number;
+  responsableId: string | null;
+  fechaCreacion: Timestamp;
+  fechaActualizacion: Timestamp;
+}
+
 export interface Gasto {
   id: string;
   eventoId: string;
@@ -100,6 +157,7 @@ export interface Gasto {
   soporteData: string;
   soporteMimeType: string;
   observaciones: string;
+  referencia: string;
   creadoPor: string;
   fechaCreacion: Timestamp;
   fechaActualizacion: Timestamp;
