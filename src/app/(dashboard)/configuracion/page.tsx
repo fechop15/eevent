@@ -1,10 +1,12 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
+import Link from "next/link";
 import { capitalizeName } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 
 export default function ConfiguracionPage() {
   const { user } = useAuth();
@@ -43,7 +45,10 @@ export default function ConfiguracionPage() {
         {user.rol === "admin" && (
           <Card className="p-6">
             <h2 className="text-lg font-semibold text-slate-100 mb-4">Gestión de Usuarios</h2>
-            <p className="text-slate-400 text-sm">La gestión completa de usuarios estará disponible pronto.</p>
+            <p className="text-slate-400 text-sm mb-4">Registra nuevos usuarios en la plataforma.</p>
+            <Link href="/usuarios/nuevo">
+              <Button variant="secondary">Registrar Usuario</Button>
+            </Link>
           </Card>
         )}
       </div>
