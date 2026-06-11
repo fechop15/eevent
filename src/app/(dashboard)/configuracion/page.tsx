@@ -136,32 +136,34 @@ export default function ConfiguracionPage() {
                       <td className="py-3 pr-4 text-slate-200">{capitalizeName(u.nombre)} {capitalizeName(u.apellido)}</td>
                       <td className="py-3 pr-4 text-slate-200">{u.email}</td>
                       <td className="py-3 pr-4">
-                        <select
-                          value={u.rol}
-                          onChange={(e) => handleRolChange(u.id, e.target.value)}
-                          disabled={savingId === u.id}
-                          className="bg-slate-800/50 border border-white/10 rounded-lg px-2 py-1 text-slate-200 text-sm outline-none focus:border-indigo-500 disabled:opacity-50"
-                        >
-                          {rolOptions.map((r) => (
-                            <option key={r} value={r}>{r}</option>
-                          ))}
-                        </select>
+                        <Badge variant={badgeVariant(u.rol)}>{u.rol}</Badge>
                       </td>
                       <td className="py-3 pr-4">
-                        <button
-                          onClick={() => handleToggleEstado(u.id, u.estado)}
-                          disabled={savingId === u.id}
-                          className="disabled:opacity-50"
-                        >
-                          <Badge variant={u.estado === "activo" ? "success" : "warning"}>
-                            {u.estado}
-                          </Badge>
-                        </button>
+                        <Badge variant={u.estado === "activo" ? "success" : "warning"}>
+                          {u.estado}
+                        </Badge>
                       </td>
                       <td className="py-3">
-                        <span className="text-xs text-slate-500">
-                          {savingId === u.id ? "Guardando..." : ""}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={u.rol}
+                            onChange={(e) => handleRolChange(u.id, e.target.value)}
+                            disabled={savingId === u.id}
+                            className="bg-slate-800/50 border border-white/10 rounded-lg px-2 py-1 text-slate-200 text-xs outline-none focus:border-indigo-500 disabled:opacity-50"
+                          >
+                            {rolOptions.map((r) => (
+                              <option key={r} value={r}>{r}</option>
+                            ))}
+                          </select>
+                          <Button
+                            variant={u.estado === "activo" ? "danger" : "primary"}
+                            size="sm"
+                            onClick={() => handleToggleEstado(u.id, u.estado)}
+                            loading={savingId === u.id}
+                          >
+                            {u.estado === "activo" ? "Desactivar" : "Activar"}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
