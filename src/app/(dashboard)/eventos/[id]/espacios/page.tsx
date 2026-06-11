@@ -3,7 +3,9 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "@/lib/firebase";
-import { Espacio, Inscripcion, Persona, Timestamp } from "@/types";
+import { Espacio, Persona, Timestamp, Inscripcion, capitalizeName } from "@/types";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -39,7 +41,7 @@ export default function EspaciosEventoPage({ params }: { params: Promise<{ id: s
         setEspacios(filtered);
 
         const activas = inscSnap.docs
-          .map((d) => ({ id: d.id, ...d.data() } as Inscripcion))
+          .map((d) => ({ id: d.id, ...d.data() } as unknown as Inscripcion))
           .filter((i) => i.eventoId === eventoId && i.estadoPago !== "cancelado");
         setInscripciones(activas);
 
@@ -128,6 +130,67 @@ export default function EspaciosEventoPage({ params }: { params: Promise<{ id: s
     setForm({ nombre: "", descripcion: "", capacidad: "" });
   };
 
+  const handleExportPDF = () => {
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+    doc.setFontSize(16);
+    doc.setTextColor(30, 30, 30);
+    doc.text("Resumen de Espacios", 14, 15);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Fecha: ${new Date().toLocaleDateString("es-CO")}`, 14, 22);
+
+    const tableBody: (string | number)[][] = [];
+    let num = 1;
+
+    espacios.forEach((espacio) => {
+      const enEspacio = getInscripcionesEnEspacio(espacio.id);
+      const resp = espacio.responsableId && personas[espacio.responsableId]
+        ? `${capitalizeName(personas[espacio.responsableId].nombre)} ${capitalizeName(personas[espacio.responsableId].apellido)}`
+        : "—";
+
+      if (enEspacio.length === 0) {
+        tableBody.push([num, espacio.nombre, resp, espacio.capacidad, 0, "Sin inscritos"]);
+        num++;
+      } else {
+        enEspacio.forEach((insc, i) => {
+          const p = personas[insc.personaId];
+          tableBody.push([
+            num,
+            i === 0 ? espacio.nombre : "",
+            i === 0 ? resp : "",
+            i === 0 ? espacio.capacidad : "",
+            i === 0 ? enEspacio.length : "",
+            p ? `${capitalizeName(p.nombre)} ${capitalizeName(p.apellido)}` : "—",
+            p?.numeroDocumento || "—",
+          ]);
+          num++;
+        });
+      }
+    });
+
+    autoTable(doc, {
+      startY: 28,
+      head: [["#", "Espacio", "Responsable", "Capacidad", "Asignados", "Nombre", "Cédula"]],
+      body: tableBody,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [99, 102, 241] },
+      margin: { left: 14, right: 14 },
+      columnStyles: {
+        0: { cellWidth: 10 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 40 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 20 },
+        5: { cellWidth: "auto" },
+        6: { cellWidth: 40 },
+      },
+    });
+
+    doc.save("espacios-inscritos.pdf");
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -144,6 +207,14 @@ export default function EspaciosEventoPage({ params }: { params: Promise<{ id: s
         back={{ label: "Volver al evento", onClick: () => router.push(`/eventos/${eventoId}`) }}
         action={{ label: "+ Nuevo Espacio", onClick: () => { setEditingEspacio(null); setForm({ nombre: "", descripcion: "", capacidad: "" }); setShowModal(true); } }}
       />
+
+      {espacios.length > 0 && (
+        <div className="flex justify-end mb-4">
+          <Button variant="secondary" onClick={handleExportPDF}>
+            Exportar PDF
+          </Button>
+        </div>
+      )}
 
       {espacios.length === 0 ? (
         <EmptyState
@@ -230,14 +301,34 @@ export default function EspaciosEventoPage({ params }: { params: Promise<{ id: s
                   </div>
                 ) : null}
 
-                {enEspacio.length > 0 && (
+                {!completo && enEspacio.length === 0 && (
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={() => router.push(`/eventos/${eventoId}/espacios/${espacio.id}`)}
                   >
-                    Gestionar
+                    Asignar Inscritos
                   </Button>
+                )}
+                {enEspacio.length > 0 && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => router.push(`/eventos/${eventoId}/espacios/${espacio.id}`)}
+                    >
+                      Gestionar
+                    </Button>
+                    {!completo && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => router.push(`/eventos/${eventoId}/espacios/${espacio.id}`)}
+                      >
+                        + Asignar
+                      </Button>
+                    )}
+                  </div>
                 )}
               </Card>
             );

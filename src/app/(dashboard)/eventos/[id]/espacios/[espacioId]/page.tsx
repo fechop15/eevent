@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { collection, getDocs, updateDoc, doc } from "@/lib/firebase";
+import { collection, getDocs, updateDoc, doc, getDoc } from "@/lib/firebase";
 import { Espacio, Inscripcion, Persona, Timestamp } from "@/types";
 import { capitalizeName } from "@/types";
 import { Header } from "@/components/layout/Header";
@@ -22,17 +22,18 @@ export default function EspacioDetallePage({ params }: { params: Promise<{ id: s
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRespModal, setShowRespModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [searchInscrito, setSearchInscrito] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [espDoc, inscSnap, perSnap] = await Promise.all([
-          doc("espacios/" + espacioId),
+        const espDocRef = doc("espacios/" + espacioId);
+        const [espSnap, inscSnap, perSnap] = await Promise.all([
+          getDoc(espDocRef),
           getDocs(collection("inscripciones")),
           getDocs(collection("personas")),
         ]);
 
-        const espSnap = await import("@/lib/firebase").then((m) => m.getDoc(espDoc));
         if (espSnap.exists) {
           setEspacio({ id: espSnap.id, ...espSnap.data() } as Espacio);
         }
@@ -221,7 +222,6 @@ export default function EspacioDetallePage({ params }: { params: Promise<{ id: s
             <thead>
               <tr className="border-b border-white/10">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Persona</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Tipo</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-slate-400 uppercase">Acciones</th>
               </tr>
             </thead>
@@ -244,9 +244,6 @@ export default function EspacioDetallePage({ params }: { params: Promise<{ id: s
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-400">
-                      {persona ? insc.personaId.slice(0, 8) : "—"}
-                    </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {!isResponsable && (
@@ -267,7 +264,7 @@ export default function EspacioDetallePage({ params }: { params: Promise<{ id: s
         </Card>
       )}
 
-      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Asignar Inscrito">
+      <Modal isOpen={showAddModal} onClose={() => { setShowAddModal(false); setSearchInscrito(""); }} title="Asignar Inscrito">
         {disponibles.length === 0 ? (
           <div className="space-y-4">
             <p className="text-slate-300">No hay inscritos disponibles para asignar.</p>
@@ -276,27 +273,46 @@ export default function EspacioDetallePage({ params }: { params: Promise<{ id: s
                 ? "El espacio está completo."
                 : "Todos los inscritos ya tienen un espacio asignado."}
             </p>
-            <Button variant="secondary" onClick={() => setShowAddModal(false)}>
+            <Button variant="secondary" onClick={() => { setShowAddModal(false); setSearchInscrito(""); }}>
               Cerrar
             </Button>
           </div>
         ) : (
-          <div className="space-y-2 max-h-80 overflow-y-auto">
-            {disponibles.map((insc) => {
-              const persona = personas[insc.personaId];
-              return (
-                <button
-                  key={insc.id}
-                  onClick={() => handleAsignar(insc.id)}
-                  className="w-full text-left p-3 rounded-lg hover:bg-slate-800 transition-colors border border-white/5"
-                >
-                  <p className="text-sm font-medium text-slate-100">
-                    {persona ? `${capitalizeName(persona.nombre)} ${capitalizeName(persona.apellido)}` : "—"}
-                  </p>
-                  <p className="text-xs text-slate-500">{persona?.numeroDocumento || "—"}</p>
-                </button>
-              );
-            })}
+          <div className="space-y-3">
+            <input
+              type="text"
+              placeholder="Buscar por nombre o cédula..."
+              value={searchInscrito}
+              onChange={(e) => setSearchInscrito(e.target.value)}
+              className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary"
+              autoFocus
+            />
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {disponibles
+                .filter((insc) => {
+                  const persona = personas[insc.personaId];
+                  if (!persona) return false;
+                  const term = searchInscrito.toLowerCase();
+                  const nombreCompleto = `${persona.nombre} ${persona.apellido} ${persona.numeroDocumento}`.toLowerCase();
+                  return nombreCompleto.includes(term);
+                })
+                .slice(0, 10)
+                .map((insc) => {
+                  const persona = personas[insc.personaId];
+                  return (
+                    <button
+                      key={insc.id}
+                      onClick={() => { handleAsignar(insc.id); setSearchInscrito(""); }}
+                      className="w-full text-left p-3 rounded-lg hover:bg-slate-800 transition-colors border border-white/5"
+                    >
+                      <p className="text-sm font-medium text-slate-100">
+                        {persona ? `${capitalizeName(persona.nombre)} ${capitalizeName(persona.apellido)}` : "—"}
+                      </p>
+                      <p className="text-xs text-slate-500">{persona?.numeroDocumento || "—"}</p>
+                    </button>
+                  );
+                })}
+            </div>
           </div>
         )}
       </Modal>
