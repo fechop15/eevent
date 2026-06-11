@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
-import { getDocs, collection } from "@/lib/firebase";
+import { getDocs, collection, doc, updateDoc } from "@/lib/firebase";
 import { capitalizeName, type Timestamp } from "@/types";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
@@ -21,10 +21,15 @@ interface UsuarioItem {
   fechaCreacion?: Timestamp;
 }
 
+const rolOptions = ["admin", "organizador", "contador"] as const;
+const badgeVariant = (rol: string): "danger" | "info" | "purple" =>
+  rol === "admin" ? "danger" : rol === "organizador" ? "info" : "purple";
+
 export default function ConfiguracionPage() {
   const { user } = useAuth();
   const [usuarios, setUsuarios] = useState<UsuarioItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.rol !== "admin") return;
@@ -37,10 +42,32 @@ export default function ConfiguracionPage() {
       .finally(() => setLoading(false));
   }, [user]);
 
-  if (!user) return null;
+  const handleRolChange = async (uid: string, newRol: string) => {
+    setSavingId(uid);
+    try {
+      await updateDoc(doc("usuarios", uid), { rol: newRol });
+      setUsuarios((prev) => prev.map((u) => (u.id === uid ? { ...u, rol: newRol } : u)));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingId(null);
+    }
+  };
 
-  const badgeVariant = (rol: string): "danger" | "info" | "purple" =>
-    rol === "admin" ? "danger" : rol === "organizador" ? "info" : "purple";
+  const handleToggleEstado = async (uid: string, currentEstado: string) => {
+    const newEstado = currentEstado === "activo" ? "inactivo" : "activo";
+    setSavingId(uid);
+    try {
+      await updateDoc(doc("usuarios", uid), { estado: newEstado });
+      setUsuarios((prev) => prev.map((u) => (u.id === uid ? { ...u, estado: newEstado } : u)));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  if (!user) return null;
 
   return (
     <div>
@@ -98,7 +125,8 @@ export default function ConfiguracionPage() {
                     <th className="pb-3 pr-4 font-medium">Nombre</th>
                     <th className="pb-3 pr-4 font-medium">Email</th>
                     <th className="pb-3 pr-4 font-medium">Rol</th>
-                    <th className="pb-3 font-medium">Estado</th>
+                    <th className="pb-3 pr-4 font-medium">Estado</th>
+                    <th className="pb-3 font-medium">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -108,12 +136,32 @@ export default function ConfiguracionPage() {
                       <td className="py-3 pr-4 text-slate-200">{capitalizeName(u.nombre)} {capitalizeName(u.apellido)}</td>
                       <td className="py-3 pr-4 text-slate-200">{u.email}</td>
                       <td className="py-3 pr-4">
-                        <Badge variant={badgeVariant(u.rol)}>{u.rol}</Badge>
+                        <select
+                          value={u.rol}
+                          onChange={(e) => handleRolChange(u.id, e.target.value)}
+                          disabled={savingId === u.id}
+                          className="bg-slate-800/50 border border-white/10 rounded-lg px-2 py-1 text-slate-200 text-sm outline-none focus:border-indigo-500 disabled:opacity-50"
+                        >
+                          {rolOptions.map((r) => (
+                            <option key={r} value={r}>{r}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <button
+                          onClick={() => handleToggleEstado(u.id, u.estado)}
+                          disabled={savingId === u.id}
+                          className="disabled:opacity-50"
+                        >
+                          <Badge variant={u.estado === "activo" ? "success" : "warning"}>
+                            {u.estado}
+                          </Badge>
+                        </button>
                       </td>
                       <td className="py-3">
-                        <Badge variant={u.estado === "activo" ? "success" : "warning"}>
-                          {u.estado}
-                        </Badge>
+                        <span className="text-xs text-slate-500">
+                          {savingId === u.id ? "Guardando..." : ""}
+                        </span>
                       </td>
                     </tr>
                   ))}
