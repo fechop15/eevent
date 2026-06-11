@@ -1,14 +1,21 @@
 export class Timestamp {
+  seconds: number;
+  nanoseconds: number;
+
+  constructor(seconds: number, nanoseconds: number = 0) {
+    this.seconds = seconds;
+    this.nanoseconds = nanoseconds;
+  }
+
   static now() {
     const d = new Date();
     const seconds = Math.floor(d.getTime() / 1000);
-    return { seconds, nanoseconds: 0 };
+    return new Timestamp(seconds, 0);
   }
+
   toDate() {
     return new Date(this.seconds * 1000 + this.nanoseconds / 1000000);
   }
-  seconds: number = 0;
-  nanoseconds: number = 0;
 }
 
 export function formatTimestamp(timestamp: { toDate?: () => Date; seconds?: number; nanoseconds?: number } | null | undefined): string {
@@ -71,6 +78,7 @@ export interface Evento {
   creadoPor: string;
   fechaCreacion: Timestamp;
   fechaActualizacion: Timestamp;
+  limiteInscripciones?: number;
 }
 
 export interface Persona {
@@ -142,6 +150,7 @@ export interface Espacio {
   responsableId: string | null;
   fechaCreacion: Timestamp;
   fechaActualizacion: Timestamp;
+  _count?: number;
 }
 
 export interface Gasto {

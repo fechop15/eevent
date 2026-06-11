@@ -39,14 +39,21 @@ export default function NuevaInscripcionPage({ params }: { params: Promise<{ id:
       if (evtDoc.exists) {
         setEvento({ id: evtDoc.id, ...evtDoc.data() } as Evento);
       }
-      const count = inscSnap.docs
-        .map((d) => ({ id: d.id, ...d.data() } as { eventoId: string; estadoPago: string }))
-        .filter((i) => i.eventoId === eventoId && i.estadoPago !== "cancelado").length;
-      setInscripcionesActivas(count);
-      const filteredEspacios = espSnap.docs
-        .map((d) => ({ id: d.id, ...d.data() } as Espacio))
-        .filter((e) => e.eventoId === eventoId);
-      setEspacios(filteredEspacios);
+      const inscripciones = inscSnap.docs
+        .map((d) => ({ id: d.id, ...d.data() } as unknown as { eventoId: string; espacioId: string | null; estadoPago: string }))
+        .filter((i) => i.estadoPago !== "cancelado");
+      const inscripcionesActivasCount = inscripciones.filter((i) => i.eventoId === eventoId).length;
+      setInscripcionesActivas(inscripcionesActivasCount);
+      const spaceCounts: Record<string, number> = {};
+      inscripciones.forEach((i) => {
+        if (i.espacioId) {
+          spaceCounts[i.espacioId] = (spaceCounts[i.espacioId] || 0) + 1;
+        }
+      });
+      const filteredEspacios = (espSnap.docs
+        .map((d) => ({ id: d.id, ...d.data() })) as Espacio[]
+      ).filter((e) => e.eventoId === eventoId);
+      setEspacios(filteredEspacios.map((e) => ({ ...e, _count: spaceCounts[e.id] || 0 })));
     };
     fetchData();
   }, [eventoId]);

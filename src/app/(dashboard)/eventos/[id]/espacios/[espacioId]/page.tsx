@@ -240,7 +240,7 @@ export default function EspacioDetallePage({ params }: { params: Promise<{ id: s
                           <p className="text-xs text-slate-500">{persona?.numeroDocumento || "—"}</p>
                         </div>
                         {isResponsable && (
-                          <Badge variant="primary">★ Responsable</Badge>
+                          <Badge variant="purple">★ Responsable</Badge>
                         )}
                       </div>
                     </td>
