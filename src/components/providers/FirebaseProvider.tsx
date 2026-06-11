@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyC6WecBcLCjDM1gUnWLksDpfSgNb2-EcqE",
-  authDomain: "eevent-59ae4.firebaseapp.com",
-  projectId: "eevent-59ae4",
-  storageBucket: "eevent-59ae4.firebasestorage.app",
-  messagingSenderId: "101879572487",
-  appId: "1:101879572487:web:82dfd11f1501c7b3e662a2",
-  measurementId: "G-XE4H2KN33D"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID!,
 };
 
 export function FirebaseProvider({ children }: { children: React.ReactNode }) {
