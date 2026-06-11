@@ -57,6 +57,31 @@ export default function NuevoUsuarioPage() {
     });
   };
 
+  const crearAuthUser = async () => {
+    const email = form.email || `${form.cedula}@eevent.com`;
+    const res = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password: form.password,
+          displayName: `${form.nombre} ${form.apellido}`,
+          returnSecureToken: true,
+        }),
+      }
+    );
+    const data = await res.json();
+    if (data.error) {
+      if (data.error.message === "EMAIL_EXISTS") {
+        throw { code: "auth/email-already-in-use" };
+      }
+      throw new Error(data.error.message);
+    }
+    return data.localId as string;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -75,27 +100,23 @@ export default function NuevoUsuarioPage() {
     setLoading(true);
 
     try {
-      const email = form.email || `${form.cedula}@eevent.com`;
-      const firebaseUser = await window.firebase.auth().createUserWithEmailAndPassword(email, form.password);
-      const uid = firebaseUser.user.uid;
+      const uid = await crearAuthUser();
       setAuthUid(uid);
 
       try {
         await crearDocFirestore(uid);
         router.push("/configuracion");
-      } catch (fsErr: unknown) {
-        setAuthUid(uid);
+      } catch {
         setError(
           `El usuario se creó en Auth (UID: ${uid}) pero no se pudo crear el documento en Firestore. ` +
           "Puedes reintentar crear el documento con el botón de abajo."
         );
       }
     } catch (err: unknown) {
-      const errorCode = (err as { code?: string }).code;
-      if (errorCode === "auth/email-already-in-use") {
+      if ((err as { code?: string }).code === "auth/email-already-in-use") {
         setError("Esa cédula ya está registrada");
       } else {
-        setError((err as { message?: string }).message || "Error al crear el usuario. Intenta de nuevo.");
+        setError((err as Error).message || "Error al crear el usuario. Intenta de nuevo.");
       }
     } finally {
       setLoading(false);
@@ -110,7 +131,7 @@ export default function NuevoUsuarioPage() {
       await crearDocFirestore(authUid);
       router.push("/configuracion");
     } catch (err: unknown) {
-      setError((err as { message?: string }).message || "Error al crear el documento en Firestore.");
+      setError((err as Error).message || "Error al crear el documento en Firestore.");
     } finally {
       setLoading(false);
     }
