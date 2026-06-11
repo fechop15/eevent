@@ -7,6 +7,7 @@ import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { Timestamp } from "@/types";
 
 const rolOptions = [
   { value: "admin", label: "Admin" },
@@ -16,9 +17,10 @@ const rolOptions = [
 
 export default function NuevoUsuarioPage() {
   const router = useRouter();
-  const { user, register } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [authUid, setAuthUid] = useState("");
 
   const [form, setForm] = useState({
     cedula: "",
@@ -41,9 +43,24 @@ export default function NuevoUsuarioPage() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const crearDocFirestore = async (uid: string) => {
+    const email = form.email || `${form.cedula}@eevent.com`;
+    await window.firebase.firestore().collection("usuarios").doc(uid).set({
+      cedula: form.cedula,
+      nombre: form.nombre,
+      apellido: form.apellido,
+      email,
+      rol: form.rol,
+      estado: "activo",
+      fechaCreacion: Timestamp.now(),
+      ultimoAcceso: Timestamp.now(),
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setAuthUid("");
 
     if (!form.cedula || !form.nombre || !form.apellido || !form.password) {
       setError("Completa todos los campos obligatorios");
@@ -58,24 +75,42 @@ export default function NuevoUsuarioPage() {
     setLoading(true);
 
     try {
-      await register({
-        cedula: form.cedula,
-        nombre: form.nombre,
-        apellido: form.apellido,
-        email: form.email || `${form.cedula}@eevent.com`,
-        rol: form.rol,
-        estado: "activo",
-        password: form.password,
-      });
+      const email = form.email || `${form.cedula}@eevent.com`;
+      const firebaseUser = await window.firebase.auth().createUserWithEmailAndPassword(email, form.password);
+      const uid = firebaseUser.user.uid;
+      setAuthUid(uid);
 
-      router.push("/configuracion");
+      try {
+        await crearDocFirestore(uid);
+        router.push("/configuracion");
+      } catch (fsErr: unknown) {
+        setAuthUid(uid);
+        setError(
+          `El usuario se creó en Auth (UID: ${uid}) pero no se pudo crear el documento en Firestore. ` +
+          "Puedes reintentar crear el documento con el botón de abajo."
+        );
+      }
     } catch (err: unknown) {
       const errorCode = (err as { code?: string }).code;
       if (errorCode === "auth/email-already-in-use") {
         setError("Esa cédula ya está registrada");
       } else {
-        setError("Error al crear el usuario. Intenta de nuevo.");
+        setError((err as { message?: string }).message || "Error al crear el usuario. Intenta de nuevo.");
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRetryDoc = async () => {
+    if (!authUid) return;
+    setError("");
+    setLoading(true);
+    try {
+      await crearDocFirestore(authUid);
+      router.push("/configuracion");
+    } catch (err: unknown) {
+      setError((err as { message?: string }).message || "Error al crear el documento en Firestore.");
     } finally {
       setLoading(false);
     }
@@ -159,7 +194,16 @@ export default function NuevoUsuarioPage() {
 
         {error && (
           <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30">
-            <p className="text-sm text-red-400">{error}</p>
+            <p className="text-sm text-red-400 whitespace-pre-wrap">{error}</p>
+          </div>
+        )}
+
+        {authUid && (
+          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-3">
+            <p className="text-sm text-amber-400 font-mono">UID: {authUid}</p>
+            <Button type="button" variant="secondary" size="sm" onClick={handleRetryDoc} loading={loading}>
+              Reintentar crear documento en Firestore
+            </Button>
           </div>
         )}
 
@@ -167,7 +211,7 @@ export default function NuevoUsuarioPage() {
           <Button type="button" variant="secondary" onClick={() => router.back()}>
             Cancelar
           </Button>
-          <Button type="submit" loading={loading}>
+          <Button type="submit" loading={loading && !authUid}>
             Crear Usuario
           </Button>
         </div>
