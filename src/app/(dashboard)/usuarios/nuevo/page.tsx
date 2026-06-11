@@ -7,7 +7,7 @@ import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { Timestamp } from "@/types";
+
 
 const rolOptions = [
   { value: "admin", label: "Admin" },
@@ -45,6 +45,7 @@ export default function NuevoUsuarioPage() {
 
   const crearDocFirestore = async (uid: string) => {
     const email = form.email || `${form.cedula}@eevent.com`;
+    const now = (window.firebase as any).firestore.Timestamp.now();
     await window.firebase.firestore().collection("usuarios").doc(uid).set({
       cedula: form.cedula,
       nombre: form.nombre,
@@ -52,8 +53,8 @@ export default function NuevoUsuarioPage() {
       email,
       rol: form.rol,
       estado: "activo",
-      fechaCreacion: Timestamp.now(),
-      ultimoAcceso: Timestamp.now(),
+      fechaCreacion: now,
+      ultimoAcceso: now,
     });
   };
 
@@ -106,9 +107,10 @@ export default function NuevoUsuarioPage() {
       try {
         await crearDocFirestore(uid);
         router.push("/configuracion");
-      } catch {
+      } catch (fsErr: unknown) {
         setError(
-          `El usuario se creó en Auth (UID: ${uid}) pero no se pudo crear el documento en Firestore. ` +
+          `El usuario se creó en Auth (UID: ${uid}) pero no se pudo crear el documento en Firestore.\n` +
+          `Error: ${(fsErr as Error).message || JSON.stringify(fsErr)}\n\n` +
           "Puedes reintentar crear el documento con el botón de abajo."
         );
       }
