@@ -29,13 +29,18 @@ export function Header({ title, subtitle, action, back }: HeaderProps) {
           <span>{back.label}</span>
         </button>
       )}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-100">{title}</h1>
           {subtitle && <p className="text-sm text-slate-400 mt-1">{subtitle}</p>}
         </div>
         {action && (
-          <Button variant={action.variant || "primary"} onClick={action.onClick} disabled={action.disabled}>
+          <Button
+            variant={action.variant || "primary"}
+            onClick={action.onClick}
+            disabled={action.disabled}
+            className="w-full sm:w-auto"
+          >
             {action.label}
           </Button>
         )}

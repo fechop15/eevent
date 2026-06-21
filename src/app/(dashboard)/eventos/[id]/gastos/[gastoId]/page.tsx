@@ -69,7 +69,7 @@ export default function GastoDetallePage({ params }: { params: Promise<{ id: str
         <div className="lg:col-span-2 space-y-6">
           <Card className="p-6">
             <h2 className="text-lg font-semibold text-slate-100 mb-4">Información</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-slate-400 mb-1">Monto</p>
                 <p className="text-2xl font-bold text-red-400">{formatCurrency(gasto.monto)}</p>
