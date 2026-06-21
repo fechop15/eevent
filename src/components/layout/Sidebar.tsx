@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 const navigation = [
   {
@@ -33,8 +34,21 @@ const navigation = [
   },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    onClose?.();
+    router.push("/login");
+  };
 
   const isActive = (href: string) => {
     if (href === "/eventos") {
@@ -44,16 +58,32 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-40 w-64 h-screen bg-slate-900/50 backdrop-blur-sm border-r border-white/10">
+    <aside
+      className={`fixed left-0 top-0 z-40 w-64 h-screen bg-slate-900 border-r border-white/10 transition-transform duration-300 md:translate-x-0 ${
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
       <div className="flex flex-col h-full">
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-white font-bold text-lg">E</span>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-white font-bold text-lg">E</span>
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-slate-100">EEvent</h1>
+              <p className="text-xs text-slate-500">Gestión de eventos</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-bold text-slate-100">EEvent</h1>
-            <p className="text-xs text-slate-500">Gestión de eventos</p>
-          </div>
+          {/* Close button for mobile */}
+          <button
+            onClick={onClose}
+            className="md:hidden p-1.5 text-slate-400 hover:text-slate-100 rounded-lg border border-white/10 hover:bg-slate-800"
+            aria-label="Cerrar menú"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1">
@@ -61,6 +91,7 @@ export function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
+              onClick={onClose}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive(item.href)
                   ? "bg-primary text-white"
@@ -73,8 +104,17 @@ export function Sidebar() {
           ))}
         </nav>
 
-        <div className="px-3 py-4 border-t border-white/10">
-          <div className="px-3 py-2.5 text-xs text-slate-500">
+        <div className="px-3 py-4 border-t border-white/10 space-y-2">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Cerrar sesión
+          </button>
+          <div className="px-3 py-1 text-xs text-slate-600">
             © 2026 EEvent
           </div>
         </div>

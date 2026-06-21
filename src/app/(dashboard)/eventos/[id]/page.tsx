@@ -99,7 +99,7 @@ export default function EventoDetallePage({ params }: { params: Promise<{ id: st
                 <p className="text-sm text-slate-400 mb-1">Descripción</p>
                 <p className="text-slate-200">{evento.descripcion || "Sin descripción"}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-slate-400 mb-1">Fecha de inicio</p>
                   <p className="text-slate-200">{formatTimestamp(evento.fechaInicio)}</p>
@@ -118,7 +118,7 @@ export default function EventoDetallePage({ params }: { params: Promise<{ id: st
 
           <Card className="p-6">
             <h2 className="text-lg font-semibold text-slate-100 mb-4">Acciones Rápidas</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               <Button variant="secondary" onClick={() => router.push(`/eventos/${id}/inscripciones/nueva`)}>
                 Nueva Inscripción
               </Button>

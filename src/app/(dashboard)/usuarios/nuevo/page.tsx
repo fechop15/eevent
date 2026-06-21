@@ -59,7 +59,7 @@ export default function NuevoUsuarioPage() {
   };
 
   const crearAuthUser = async () => {
-    const email = form.email || `${form.cedula}@eevent.com`;
+    const email = `${form.cedula}@eevent.com`;
     const res = await fetch(
       `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}`,
       {
@@ -164,7 +164,7 @@ export default function NuevoUsuarioPage() {
           required
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             id="nombre"
             name="nombre"
